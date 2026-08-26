@@ -1,16 +1,14 @@
+// src/Hooks/UseAxiosSecure.jsx
+
 import axios from "axios";
-// import React from "react";
 
-
-
-
-
-
-const { AxiosInstance } = axios.create({
-  baseURL: "hhttp://localhost:5173",
+// Create once at module level — not inside the hook
+const axiosInstance = axios.create({
+  baseURL: "http://localhost:8000",
 });
+
 const UseAxiosSecure = () => {
-  return { AxiosInstance };
+  return axiosInstance; // return the instance, not an object wrapping it
 };
 
 export default UseAxiosSecure;
