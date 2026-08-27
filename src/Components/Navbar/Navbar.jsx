@@ -8,8 +8,10 @@ import UseAuth from "../../Hooks/UseAuth";
 // ── nav links ──────────────────────────────────────────────────────────────────
 const NAV_LINKS = [
   { label: "Home",       to: "/" },
-  { label: "Tickets",    to: "/tickets" },
-  { label: "My Tickets", to: "/my-tickets" },
+  // { label: "Tickets",    to: "/tickets" },
+  { label: "My Tickets", to: "/dashboard" },
+  { label: "Admin Panel", to: "/admin" },
+  { label: "Admin Panel", to: "/agent" },
 ];
 
 // ── helpers ────────────────────────────────────────────────────────────────────
