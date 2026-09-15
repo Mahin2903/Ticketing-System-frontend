@@ -7,15 +7,28 @@ import Logo from "../../Utilities/Logo";
 
 const ADMIN_NAV_ITEMS = [
   {
-    to: "/admin",
-    label: "Tickets Management",
-    exact: true,
+    to: "/admin/dashboard-overview",
+    label: "Dashboard Overview",
+    exact: false,
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="7" height="9" rx="1" />
         <rect x="14" y="3" width="7" height="5" rx="1" />
         <rect x="14" y="12" width="7" height="9" rx="1" />
         <rect x="3" y="16" width="7" height="5" rx="1" />
+      </svg>
+    ),
+  },
+  {
+    to: "/admin",
+    label: "Tickets Management",
+    exact: true,
+    icon: (
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M15 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9l-4-4z" />
+        <polyline points="15 5 15 9 19 9" />
+        <line x1="9" y1="13" x2="15" y2="13" />
+        <line x1="9" y1="17" x2="12" y2="17" />
       </svg>
     ),
   },

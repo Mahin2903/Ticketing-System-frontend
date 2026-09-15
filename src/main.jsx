@@ -17,6 +17,10 @@ import AdminSettings from "./Pages/Admin/AdminSettings.jsx";
 import Agent from "./Pages/Agent/Agent.jsx";
 import AgentDashboard from "./Pages/Agent/AgentDashboard.jsx";
 import AgentDashboardManagement from "./Pages/Agent/AgentDashboardManagement.jsx";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import AdminDashboardOverView from "./Pages/Admin/AdminDashboardOverView.jsx";
+
+const queryClient = new QueryClient();
 
 const router = createBrowserRouter([
   {
@@ -49,6 +53,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, Component: AdminDashboard },
       { path: "/admin/settings", Component: AdminSettings },
+      { path: "/admin/dashboard-overview", Component: AdminDashboardOverView },
     ],
   },
   {
@@ -60,10 +65,13 @@ const router = createBrowserRouter([
     ],
   },
 ]);
+
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <AuthProvider>
-      <RouterProvider router={router} />
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
+    </QueryClientProvider>
   </StrictMode>,
 );

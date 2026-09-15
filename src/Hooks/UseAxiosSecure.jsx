@@ -3,7 +3,8 @@
 import axios from "axios";
 
 // Create once at module level — not inside the hook
-const axiosInstance = axios.create({
+// eslint-disable-next-line react-refresh/only-export-components
+export const axiosInstance = axios.create({
   baseURL: "http://localhost:8000",
 });
 

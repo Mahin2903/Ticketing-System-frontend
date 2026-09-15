@@ -1,50 +1,24 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 /* eslint-disable no-empty */
 /* eslint-disable no-unused-vars */
 // src/Pages/Dashboards/UserDashboard.jsx
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
+
+import { axiosInstance } from "../../Hooks/UseAxiosSecure";
+import Swal from "sweetalert2";
 import UseAuth from "../../Hooks/UseAuth";
+
+// const {user} = UseAuth();
+// Debugging line to check user state
 
 // ── Static option lists ───────────────────────────────────────────────────────
 const PRIORITIES = [
-  { value: "Low",      color: "#34d399", bg: "rgba(52,211,153,0.12)"  },
-  { value: "Medium",   color: "#60a5fa", bg: "rgba(96,165,250,0.12)"  },
-  { value: "High",     color: "#fb923c", bg: "rgba(251,146,60,0.12)"  },
+  { value: "Low", color: "#34d399", bg: "rgba(52,211,153,0.12)" },
+  { value: "Medium", color: "#60a5fa", bg: "rgba(96,165,250,0.12)" },
+  { value: "High", color: "#fb923c", bg: "rgba(251,146,60,0.12)" },
   { value: "Critical", color: "#f87171", bg: "rgba(248,113,113,0.12)" },
-];
-
-const DEPARTMENTS = [
-  "Computer Science & Engineering",
-  "Electrical & Electronic Engineering",
-  "Electronics & Telecommunication Engineering",
-  "Civil Engineering",
-  "Mechanical Engineering",
-  "Mathematics",
-  "Physics",
-  "Chemistry",
-  "Environmental Science",
-  "Business Administration",
-  "English",
-  "Administration Office",
-  "Library",
-  "IT & Network Services",
-  "Examination Office",
-  "Finance & Accounts",
-];
-
-const HELP_TOPICS = [
-  "Network & Internet Access",
-  "Computer Hardware",
-  "Software Installation / Issue",
-  "Account & Login Problem",
-  "Email & Communication",
-  "Printing & Scanning",
-  "CCTV & Surveillance",
-  "Phone & PABX",
-  "Data Backup & Recovery",
-  "Website & Portal",
-  "Other",
 ];
 
 // ── Toolbar actions ───────────────────────────────────────────────────────────
@@ -72,24 +46,18 @@ const FORMAT_ACTIONS = [
     label: "Inline code",
     command: "code",
     icon: (
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="13"
+        height="13"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.25"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <polyline points="16 18 22 12 16 6" />
         <polyline points="8 6 2 12 8 18" />
-      </svg>
-    ),
-  },
-  {
-    id: "bullet",
-    label: "Bullet list",
-    command: "insertUnorderedList",
-    icon: (
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="9" y1="6" x2="20" y2="6" />
-        <line x1="9" y1="12" x2="20" y2="12" />
-        <line x1="9" y1="18" x2="20" y2="18" />
-        <circle cx="4" cy="6" r="1" />
-        <circle cx="4" cy="12" r="1" />
-        <circle cx="4" cy="18" r="1" />
       </svg>
     ),
   },
@@ -122,7 +90,9 @@ const SectionCard = ({ number, title, subtitle, children }) => (
       </span>
       <div>
         <h2 className="text-[13.5px] font-semibold text-white/88">{title}</h2>
-        {subtitle && <p className="text-[11.5px] text-white/35 mt-0.5">{subtitle}</p>}
+        {subtitle && (
+          <p className="text-[11.5px] text-white/35 mt-0.5">{subtitle}</p>
+        )}
       </div>
     </div>
     <div className="px-6 py-5">{children}</div>
@@ -136,7 +106,9 @@ const FieldLabel = ({ children }) => (
 );
 
 const ReadOnlyField = ({ value }) => (
-  <div className={`${inputCls} bg-white/[0.02] text-white/45 cursor-default select-none`}>
+  <div
+    className={`${inputCls} bg-white/[0.02] text-white/45 cursor-default select-none`}
+  >
     {value || "—"}
   </div>
 );
@@ -156,21 +128,67 @@ const INIT = {
 // ── UserDashboard ─────────────────────────────────────────────────────────────
 const UserDashboard = () => {
   const { user } = UseAuth();
+  const [dbUserData, setDbUserData] = useState(null);
+
+  // Fetch full user record from backend when Firebase user loads
+  useEffect(() => {
+    if (!user?.email) return;
+
+    // Correct endpoint format: query parameter for email search
+    axiosInstance
+      .get(`/api/users?email=${encodeURIComponent(user.email)}`)
+      .then((res) => {
+        if (res.data?.success) {
+          setDbUserData(res.data.data);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to fetch user by email:", err);
+      });
+  }, [user?.email]); // Debugging line to check fetched user details
+  // console.log("Fetched user data from backend:", dbUserData);
+
   const [form, setForm] = useState(INIT);
+  const [departments, setDepartments] = useState([]);
+  const [helpTopics, setHelpTopics] = useState([]);
   const [fileError, setFileError] = useState("");
+  const [submitError, setSubmitError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [createdTicket, setCreatedTicket] = useState(null);
   const [activeFormats, setActiveFormats] = useState(new Set());
+
   const editorRef = useRef(null);
 
+  // ── Fetch select options on mount ─────────────────────────────────────────
+  useEffect(() => {
+    axiosInstance
+      .get("/api/departments")
+      .then((res) => {
+        const data = res.data?.data ?? [];
+        setDepartments(
+          data.map((d) => ({ value: d.id, label: d.department_title })),
+        );
+      })
+      .catch((err) => console.error("Failed to load departments:", err));
+
+    axiosInstance
+      .get("/api/help-topics")
+      .then((res) => {
+        const data = res.data?.data ?? [];
+        setHelpTopics(data.map((t) => ({ value: t.id, label: t.topic_title })));
+      })
+      .catch((err) => console.error("Failed to load help topics:", err));
+  }, []);
+
+  // ── Form helpers ──────────────────────────────────────────────────────────
   const set = (key, val) => setForm((prev) => ({ ...prev, [key]: val }));
   const handleChange = (e) => set(e.target.name, e.target.value);
 
-  // Keep active formats in sync with actual selection state (e.g. when user
-  // moves cursor into non-bold text, bold button should deactivate)
   const syncActiveFormats = () => {
     const updated = new Set();
     FORMAT_ACTIONS.forEach(({ id, command }) => {
-      if (command === "code") return; // execCommand has no queryState for code
+      if (command === "code") return;
       try {
         if (document.queryCommandState(command)) updated.add(id);
       } catch (_) {}
@@ -182,7 +200,9 @@ const UserDashboard = () => {
     const file = e.target.files[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
-      setFileError(`"${file.name}" is ${formatBytes(file.size)} — max is 2 MB.`);
+      setFileError(
+        `"${file.name}" is ${formatBytes(file.size)} — max is 2 MB.`,
+      );
       e.target.value = "";
       return;
     }
@@ -195,30 +215,25 @@ const UserDashboard = () => {
     set("attachment", null);
   };
 
-  // Apply a toolbar format command
+  // ── Toolbar format helpers ────────────────────────────────────────────────
   const applyFormat = (action) => {
     const editor = editorRef.current;
     if (!editor) return;
 
     if (action.command === "code") {
-      // Wrap selection in <code> tag manually
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);
+        const code = document.createElement("code");
+        code.style.cssText =
+          "font-family:monospace;background:rgba(255,255,255,0.1);padding:1px 5px;border-radius:4px;font-size:12px;";
+
         if (!range.collapsed) {
-          const code = document.createElement("code");
-          code.style.cssText =
-            "font-family:monospace;background:rgba(255,255,255,0.1);padding:1px 5px;border-radius:4px;font-size:12px;";
           range.surroundContents(code);
           selection.removeAllRanges();
         } else {
-          // No selection: insert a <code> placeholder
-          const code = document.createElement("code");
-          code.style.cssText =
-            "font-family:monospace;background:rgba(255,255,255,0.1);padding:1px 5px;border-radius:4px;font-size:12px;";
           code.textContent = "code";
           range.insertNode(code);
-          // Select the placeholder text
           const newRange = document.createRange();
           newRange.selectNodeContents(code);
           selection.removeAllRanges();
@@ -234,14 +249,13 @@ const UserDashboard = () => {
       return;
     }
 
-    // Standard execCommand (bold / italic / underline / insertUnorderedList)
     editor.focus();
     document.execCommand(action.command, false, null);
     syncActiveFormats();
   };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitError("");
 
     const descriptionHTML = editorRef.current?.innerHTML ?? "";
     const descriptionText = editorRef.current?.innerText ?? "";
@@ -251,44 +265,83 @@ const UserDashboard = () => {
       return;
     }
 
+    // Map frontend form shape → backend API shape.
+    // `user.dbId` is expected to be the integer user_id stored in your DB.
+    // If your auth hook exposes it under a different key, adjust here.
+    const resetForm = () => {
+      setForm(INIT);
+      setFileError("");
+      setSubmitError("");
+      setSubmitted(false);
+      setCreatedTicket(null);
+      setActiveFormats(new Set());
+      if (editorRef.current) editorRef.current.innerHTML = "";
+    };
     const payload = {
-      ticketId: `TKT-${Date.now()}`,
-      subject:     form.subject,
-      priority:    form.priority,
-      department:  form.department,
-      helpTopic:   form.helpTopic,
-      mobile:      form.mobile,
-      room:        form.room,
-      pabx:        form.pabx,
-      description: descriptionHTML,   // rich HTML
-      descriptionPlain: descriptionText,
-      attachment:  form.attachment
-        ? { name: form.attachment.name, size: form.attachment.size, type: form.attachment.type }
-        : null,
-      submittedBy: {
-        uid:      user?.uid,
-        name:     user?.displayName,
-        email:    user?.email,
-        photoURL: user?.photoURL,
-      },
-      submittedAt: new Date().toISOString(),
+      user_id: dbUserData?.id,
+      subject: form.subject,
+      description: descriptionHTML,
+      priority: form.priority.toUpperCase(), // backend expects "LOW" | "MEDIUM" etc.
+      department_id: form.department, // already the integer id from the select
+      help_topic_id: form.helpTopic, // same
+      mobile: form.mobile,
+      room: form.room || undefined,
+      pabx: form.pabx || undefined,
     };
 
-    console.log("Ticket submitted:", payload);
-    setSubmitted(true);
-  };
+    setIsSubmitting(true);
+    try {
+      const res = await axiosInstance.post("/api/tickets", payload);
+      const ticket = res.data?.data ?? null;
+      setCreatedTicket(ticket);
+      setSubmitted(true);
 
-  // Reset editor content when going back to submit another ticket
+      await Swal.fire({
+        icon: "success",
+        title: "Ticket submitted!",
+        html: ticket?.ticket_number
+          ? `Your ticket <strong>${ticket.ticket_number}</strong> has been received. We'll get back to you shortly.`
+          : "Your ticket has been received. We'll get back to you shortly.",
+        confirmButtonText: "Got it",
+        background: "#1a1a2e",
+        color: "#e2e8f0",
+        confirmButtonColor: "#7c3aed",
+        customClass: { popup: "rounded-2xl" },
+      });
+    } catch (err) {
+      const serverMsg =
+        err?.response?.data?.message ||
+        err?.response?.data?.errors?.join(", ") ||
+        "Something went wrong. Please try again.";
+
+      await Swal.fire({
+        icon: "error",
+        title: "Submission failed",
+        text: serverMsg,
+        confirmButtonText: "Try again",
+        background: "#1a1a2e",
+        color: "#e2e8f0",
+        confirmButtonColor: "#7c3aed",
+        customClass: { popup: "rounded-2xl" },
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   const resetForm = () => {
-    setForm(INIT);
-    setFileError("");
-    setSubmitted(false);
-    setActiveFormats(new Set());
-    if (editorRef.current) editorRef.current.innerHTML = "";
-  };
+      setForm(INIT);
+      setFileError("");
+      setSubmitError("");
+      setSubmitted(false);
+      setCreatedTicket(null);
+      setActiveFormats(new Set());
+      if (editorRef.current) editorRef.current.innerHTML = "";
+    };
 
-  // ── Success screen ──────────────────────────────────────────────────────────
+  
+  // ── Success screen ────────────────────────────────────────────────────────
   if (submitted) {
+    
     return (
       <motion.div
         className="flex flex-col items-center justify-center py-20 text-center max-w-sm mx-auto"
@@ -297,14 +350,34 @@ const UserDashboard = () => {
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       >
         <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 flex items-center justify-center mb-5">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12"/>
+          <svg
+            width="26"
+            height="26"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#34d399"
+            strokeWidth="2.25"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>
-        <h2 className="text-[1.25rem] font-bold text-white mb-2">Ticket submitted</h2>
+
+        <h2 className="text-[1.25rem] font-bold text-white mb-2">
+          Ticket submitted
+        </h2>
+
+        {createdTicket?.ticket_number && (
+          <p className="text-[11.5px] font-mono text-violet-400/80 bg-violet-500/10 border border-violet-500/20 rounded-lg px-3 py-1.5 mb-3">
+            {createdTicket.ticket_number}
+          </p>
+        )}
+
         <p className="text-white/38 text-[13.5px] leading-relaxed mb-7">
-          The payload has been logged to the console. You can connect the API later.
+          Your ticket has been received. Our team will get back to you shortly.
         </p>
+
         <button
           onClick={resetForm}
           className="px-6 py-3 rounded-xl border border-white/[0.09] bg-white/[0.05] text-white/65 text-sm font-medium hover:bg-white/[0.09] transition-colors cursor-pointer"
@@ -315,16 +388,61 @@ const UserDashboard = () => {
     );
   }
 
-  // ── Form ────────────────────────────────────────────────────────────────────
-  return (
-    <form onSubmit={handleSubmit} className="max-w-2xl space-y-4">
+  // ── Reset for another submission ──────────────────────────────────────────
 
-      {/* ── Section 1: Your Details ────────────────────────────────────── */}
-      <SectionCard
-        number="1"
-        title="Your Details"
-        // subtitle="Pre-filled from your account — read only"
+  // ── Success screen ────────────────────────────────────────────────────────
+  if (submitted) {
+    return (
+      <motion.div
+        className="flex flex-col items-center justify-center py-20 text-center max-w-sm mx-auto"
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       >
+        <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 flex items-center justify-center mb-5">
+          <svg
+            width="26"
+            height="26"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#34d399"
+            strokeWidth="2.25"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+
+        <h2 className="text-[1.25rem] font-bold text-white mb-2">
+          Ticket submitted
+        </h2>
+
+        {createdTicket?.ticket_number && (
+          <p className="text-[11.5px] font-mono text-violet-400/80 bg-violet-500/10 border border-violet-500/20 rounded-lg px-3 py-1.5 mb-3">
+            {createdTicket.ticket_number}
+          </p>
+        )}
+
+        <p className="text-white/38 text-[13.5px] leading-relaxed mb-7">
+          Your ticket has been received. Our team will get back to you shortly.
+        </p>
+
+        <button
+          onClick={resetForm}
+          className="px-6 py-3 rounded-xl border border-white/[0.09] bg-white/[0.05] text-white/65 text-sm font-medium hover:bg-white/[0.09] transition-colors cursor-pointer"
+        >
+          Submit another ticket
+        </button>
+      </motion.div>
+    );
+  }
+
+  // ── Form ──────────────────────────────────────────────────────────────────
+  return (
+    <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-4">
+      {/* ── Section 1: Your Details ──────────────────────────────────── */}
+      <SectionCard number="1" title="Your Details">
         <div className="flex items-start gap-4">
           <img
             src={user?.photoURL ?? ""}
@@ -344,17 +462,12 @@ const UserDashboard = () => {
         </div>
       </SectionCard>
 
-      {/* ── Section 2: Ticket Details ──────────────────────────────────── */}
-      <SectionCard
-        number="2"
-        title="Ticket Details"
-        // subtitle="Subject · Priority · Dept · Help Topic · Mobile · Room · PABX"
-      >
+      {/* ── Section 2: Ticket Details ────────────────────────────────── */}
+      <SectionCard number="2" title="Ticket Details">
         <div className="space-y-4">
-
           {/* Subject */}
           <div>
-            <FieldLabel>Subject </FieldLabel>
+            <FieldLabel>Subject *</FieldLabel>
             <input
               className={inputCls}
               name="subject"
@@ -380,7 +493,9 @@ const UserDashboard = () => {
                     style={{
                       color: active ? color : "rgba(255,255,255,0.35)",
                       background: active ? bg : "transparent",
-                      borderColor: active ? `${color}50` : "rgba(255,255,255,0.09)",
+                      borderColor: active
+                        ? `${color}50`
+                        : "rgba(255,255,255,0.09)",
                     }}
                   >
                     {value}
@@ -388,6 +503,7 @@ const UserDashboard = () => {
                 );
               })}
             </div>
+            {/* Hidden input drives native form validation for priority */}
             <input
               type="text"
               className="sr-only"
@@ -410,8 +526,14 @@ const UserDashboard = () => {
                 required
                 style={{ colorScheme: "dark" }}
               >
-                <option value="" disabled>Select department</option>
-                {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
+                <option value="" disabled>
+                  Select department
+                </option>
+                {departments.map((d) => (
+                  <option key={d.value} value={d.value}>
+                    {d.label}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
@@ -424,8 +546,14 @@ const UserDashboard = () => {
                 required
                 style={{ colorScheme: "dark" }}
               >
-                <option value="" disabled>Select topic</option>
-                {HELP_TOPICS.map((t) => <option key={t} value={t}>{t}</option>)}
+                <option value="" disabled>
+                  Select topic
+                </option>
+                {helpTopics.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -433,7 +561,7 @@ const UserDashboard = () => {
           {/* Mobile + Room + PABX */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <FieldLabel>Mobile</FieldLabel>
+              <FieldLabel>Mobile *</FieldLabel>
               <input
                 className={inputCls}
                 name="mobile"
@@ -441,6 +569,7 @@ const UserDashboard = () => {
                 onChange={handleChange}
                 placeholder="017XXXXXXXX"
                 type="tel"
+                required
               />
             </div>
             <div>
@@ -469,18 +598,17 @@ const UserDashboard = () => {
         </div>
       </SectionCard>
 
-      {/* ── Section 3: Description ─────────────────────────────────────── */}
+      {/* ── Section 3: Description ───────────────────────────────────── */}
       <SectionCard
         number="3"
         title="Description"
-        subtitle="Formatting toolbar and one attachment up to 2 MB"
+        subtitle="Formatting toolbar · attachment optional up to 2 MB"
       >
         <div>
           <FieldLabel>Details *</FieldLabel>
 
           <div className="rounded-xl border border-white/[0.09] bg-white/[0.05] focus-within:border-violet-500/50 focus-within:ring-1 focus-within:ring-violet-500/25 transition-colors overflow-hidden">
-
-            {/* ── contentEditable rich-text area ── */}
+            {/* Rich-text area */}
             <div
               ref={editorRef}
               contentEditable
@@ -490,13 +618,10 @@ const UserDashboard = () => {
               onSelect={syncActiveFormats}
               data-placeholder="Describe your issue in detail — include error messages, steps you've tried, device/location, etc."
               className="w-full min-h-[120px] px-4 pt-3 pb-2 text-white text-[13.5px] focus:outline-none"
-              style={{
-                // Show placeholder via CSS when empty
-                "--placeholder-color": "rgba(255,255,255,0.25)",
-              }}
+              style={{ "--placeholder-color": "rgba(255,255,255,0.25)" }}
             />
 
-            {/* Toolbar row */}
+            {/* Toolbar */}
             <div className="flex flex-wrap items-center gap-2 px-2.5 py-2 border-t border-white/[0.06]">
               <div className="flex items-center gap-0.5">
                 {FORMAT_ACTIONS.map((action) => {
@@ -508,8 +633,7 @@ const UserDashboard = () => {
                       title={action.label}
                       aria-label={action.label}
                       onMouseDown={(e) => {
-                        // Prevent the editor from losing focus when clicking toolbar
-                        e.preventDefault();
+                        e.preventDefault(); // keep editor focus
                         applyFormat(action);
                       }}
                       className={toolbarBtnCls}
@@ -535,8 +659,17 @@ const UserDashboard = () => {
                   aria-label="Attach a file"
                   className={toolbarBtnCls}
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
                   </svg>
                   <input type="file" className="hidden" onChange={handleFile} />
                 </label>
@@ -554,8 +687,18 @@ const UserDashboard = () => {
                     aria-label="Remove attachment"
                     className="w-4 h-4 rounded-full flex items-center justify-center text-white/40 hover:text-white/80 hover:bg-white/[0.12] transition-colors cursor-pointer shrink-0 focus:outline-none focus-visible:ring-1 focus-visible:ring-violet-500/40"
                   >
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    <svg
+                      width="9"
+                      height="9"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
                     </svg>
                   </button>
                 </span>
@@ -563,28 +706,86 @@ const UserDashboard = () => {
             </div>
           </div>
 
-          <p className={`mt-1.5 text-[11.5px] ${fileError ? "text-red-400" : "text-white/25"}`}>
-            {fileError || "Rich text supported · attachment optional, up to 2 MB."}
+          <p
+            className={`mt-1.5 text-[11.5px] ${fileError ? "text-red-400" : "text-white/25"}`}
+          >
+            {fileError ||
+              "Rich text supported · attachment optional, up to 2 MB."}
           </p>
         </div>
       </SectionCard>
 
-      {/* ── Submit ─────────────────────────────────────────────────────── */}
+      {/* ── API error banner ─────────────────────────────────────────── */}
+      {submitError && (
+        <div className="flex items-start gap-3 rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3">
+          <svg
+            className="shrink-0 mt-0.5"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#f87171"
+            strokeWidth="2.25"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <p className="text-[12.5px] text-red-400 leading-relaxed">
+            {submitError}
+          </p>
+        </div>
+      )}
+
+      {/* ── Submit ───────────────────────────────────────────────────── */}
       <div className="flex justify-end">
         <motion.button
           type="submit"
-          className="flex items-center gap-2.5 px-8 py-[14px] rounded-xl bg-white text-[#18182a] font-semibold text-[13.5px] cursor-pointer select-none"
-          whileHover={{ scale: 1.016, y: -1 }}
-          whileTap={{ scale: 0.975 }}
+          disabled={isSubmitting}
+          className="flex items-center gap-2.5 px-8 py-[14px] rounded-xl bg-white text-[#18182a] font-semibold text-[13.5px] cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
+          whileHover={!isSubmitting ? { scale: 1.016, y: -1 } : undefined}
+          whileTap={!isSubmitting ? { scale: 0.975 } : undefined}
           transition={{ type: "spring", stiffness: 440, damping: 26 }}
         >
-          Submit ticket
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M5 12h14"/><path d="M12 5l7 7-7 7"/>
-          </svg>
+          {isSubmitting ? (
+            <>
+              <svg
+                className="animate-spin"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+              </svg>
+              Submitting…
+            </>
+          ) : (
+            <>
+              Submit ticket
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M5 12h14" />
+                <path d="M12 5l7 7-7 7" />
+              </svg>
+            </>
+          )}
         </motion.button>
       </div>
-
     </form>
   );
 };

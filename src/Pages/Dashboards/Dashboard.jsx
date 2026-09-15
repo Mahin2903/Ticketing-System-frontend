@@ -8,6 +8,7 @@ import { Link, Outlet, useLocation } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import UseAuth from "../../Hooks/UseAuth";
 import Logo from "../../Utilities/Logo";
+// import {axiosInstance} from "../../Hooks/UseAxiosSecure";
 
 // ── Nav config ────────────────────────────────────────────────────────────────
 const NAV_ITEMS = [

@@ -1,9 +1,4 @@
-// src/Components/Home/Home.jsx
-// ─────────────────────────────────────────────────────────────────────────────
-// JUST ICT Ticketing Portal — Home Page
-// Lenis smooth scroll · GSAP ScrollTrigger section-header reveal
-// Framer Motion hero stagger · step card whileInView + whileHover
-// ─────────────────────────────────────────────────────────────────────────────
+
 
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
@@ -236,7 +231,7 @@ const Home = () => {
             transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
           />
           <motion.div
-            className="absolute bottom-[12%] right-[5%] w-60 h-60 rounded-full bg-amber-800/[0.13] blur-[80px] pointer-events-none"
+            className="absolute bottom-[12%] right-[5%] w-60 h-60 rounded-full  blur-[80px] pointer-events-none"
             animate={{ scale: [1.2, 1, 1.2] }}
             transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 2.5 }}
           />
@@ -252,13 +247,7 @@ const Home = () => {
               <Logo />
             </motion.div>
 
-            {/* Eyebrow badge */}
-            <motion.div variants={fadeUp} className="mb-6">
-              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-violet-500/25 bg-violet-500/10 text-violet-300/80 text-[11px] font-medium tracking-[0.18em] uppercase">
-                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
-                Official ICT Support System
-              </span>
-            </motion.div>
+            
 
             {/* Headline */}
             <motion.h1

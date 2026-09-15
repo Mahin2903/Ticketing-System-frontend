@@ -7,6 +7,7 @@ import { FcGoogle } from "react-icons/fc";
 import Swal from "sweetalert2";
 import uniImg from "../../../images/IMG_0794.png";
 import UseAuth from "../../../Hooks/UseAuth";
+import UseAxiosSecure from "../../../Hooks/UseAxiosSecure";
 import Logo from "../../../Utilities/Logo";
 
 // ── animation variants ────────────────────────────────────────────────────────
@@ -28,10 +29,10 @@ const imagePan = {
 // ── component ─────────────────────────────────────────────────────────────────
 const Login = () => {
   const { LoginWithGoogle, user, loading } = UseAuth();
-  const navigate  = useNavigate();
-  const location  = useLocation();
+  const axiosSecure = UseAxiosSecure();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Redirect back to the page the user was trying to reach, or "/" by default
   const from = location.state?.from?.pathname || "/";
 
   useEffect(() => {
@@ -40,16 +41,21 @@ const Login = () => {
 
   const handleGoogleLogin = async () => {
     try {
-      await LoginWithGoogle();
+      const result = await LoginWithGoogle();
+      const { displayName: name, email } = result.user;
+
+      await axiosSecure.post("/api/users", { name, email });
+
+      navigate(from, { replace: true });
     } catch (err) {
       Swal.fire({
-        icon:             "error",
-        title:            "Sign-in failed",
-        text:             err?.message || "Could not sign in with Google. Please try again.",
-        background:       "#0f0b1a",
-        color:            "#e2e8f0",
+        icon:               "error",
+        title:              "Sign-in failed",
+        text:               err?.message || "Could not sign in with Google. Please try again.",
+        background:         "#0f0b1a",
+        color:              "#e2e8f0",
         confirmButtonColor: "#7c3aed",
-        customClass:      { popup: "rounded-2xl border border-white/10" },
+        customClass:        { popup: "rounded-2xl border border-white/10" },
       });
     }
   };
