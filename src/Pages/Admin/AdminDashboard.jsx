@@ -376,7 +376,6 @@ const AdminDashboard = () => {
       return res.data.data ?? [];
     },
   });
-
   const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
@@ -384,7 +383,6 @@ const AdminDashboard = () => {
       return res.data.data ?? [];
     },
   });
-
   const tickets = ticketsData ?? [];
   const users   = usersData   ?? [];
 
@@ -400,12 +398,12 @@ const AdminDashboard = () => {
     onSuccess: () => { invalidate(); setAssignModalTicket(null); },
   });
 
+  // FIXED: Using axios (from UseAxiosSecure) instead of raw axiosInstance
   const updateTicketMutation = useMutation({
     mutationFn: ({ id, ...fields }) => axios.patch(`/api/tickets/${id}`, fields),
     onSuccess: () => { invalidate(); setEditingTicket(null); },
   });
 
-  // Permanently deletes the ticket rather than patching an unsupported status
   const deleteTicketMutation = useMutation({
     mutationFn: (id) => axios.delete(`/api/tickets/${id}`),
     onSuccess: invalidate,
