@@ -298,10 +298,10 @@ const UserDashboard = () => {
 
       await Swal.fire({
         icon: "success",
-        title: "Ticket submitted!",
+        title: "Ticket Submitted Successfully!",
         html: ticket?.ticket_number
-          ? `Your ticket <strong>${ticket.ticket_number}</strong> has been received. We'll get back to you shortly.`
-          : "Your ticket has been received. We'll get back to you shortly.",
+          ? `Your ticket <strong>${ticket.ticket_number}</strong> has been created.<br/><span class="text-xs text-slate-300 mt-2 block">📧 Confirmation email sent to your inbox and alerts dispatched to support staff.</span>`
+          : "Your ticket has been created and email alerts dispatched to support staff.",
         confirmButtonText: "Got it",
         background: "#1a1a2e",
         color: "#e2e8f0",

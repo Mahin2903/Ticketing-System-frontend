@@ -46,6 +46,10 @@ const router = createBrowserRouter([
         path: "/dashboard/user-dashboard-history",
         Component: UserDashboardHistory,
       },
+      {
+        path: "/dashboard/ticket/:id",
+        Component: TicketDetails,
+      },
     ],
   },
   {

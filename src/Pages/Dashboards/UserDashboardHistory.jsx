@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
 // src/Pages/Dashboards/UserDashboardHistory.jsx
 import React, { useMemo } from "react";
+import { Link } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { axiosInstance } from "../../Hooks/UseAxiosSecure";
@@ -287,6 +288,16 @@ const UserDashboardHistory = () => {
                         <PriorityBadge priority={ticket.priority} />
                         <StatusBadge status={ticket.status} />
 
+                        <Link
+                          to={`/dashboard/ticket/${ticket.id}`}
+                          className="text-xs font-medium text-violet-400 hover:text-violet-300 hover:bg-violet-500/10 px-2.5 py-1 rounded-md border border-violet-500/20 transition-colors flex items-center gap-1.5"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                          </svg>
+                          View & Reply
+                        </Link>
+
                         {statusKey !== "Closed" && statusKey !== "Resolved" && (
                           <button
                             onClick={() => handleCancelClick(ticket.id)}
@@ -300,9 +311,12 @@ const UserDashboardHistory = () => {
                     </div>
 
                     {/* Subject / Title */}
-                    <h3 className="text-base font-medium text-zinc-100 group-hover:text-white transition-colors mb-3">
+                    <Link
+                      to={`/dashboard/ticket/${ticket.id}`}
+                      className="block text-base font-medium text-zinc-100 hover:text-violet-300 transition-colors mb-3"
+                    >
                       {helpTopicName || ticket.subject}
-                    </h3>
+                    </Link>
 
                     {/* Metadata Footer */}
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-400">

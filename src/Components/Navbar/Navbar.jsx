@@ -1,18 +1,11 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useRef } from "react";
 import { Link, NavLink, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import Logo from "../../Utilities/Logo";
 import { LuLogIn, LuLogOut } from "react-icons/lu";
 import UseAuth from "../../Hooks/UseAuth";
-
-// ── nav links ──────────────────────────────────────────────────────────────────
-const NAV_LINKS = [
-  { label: "Home",       to: "/" },
-  // { label: "Tickets",    to: "/tickets" },
-  { label: "My Tickets", to: "/dashboard" },
-  { label: "Admin Panel", to: "/admin" },
-  { label: "Admin Panel", to: "/agent" },
-];
+import { axiosInstance } from "../../Hooks/UseAxiosSecure";
 
 // ── helpers ────────────────────────────────────────────────────────────────────
 const HamburgerIcon = ({ open }) => (
@@ -43,15 +36,54 @@ const linkClass = ({ isActive }) =>
 
 // ── component ──────────────────────────────────────────────────────────────────
 const Navbar = () => {
-  const [scrolled,     setScrolled]     = useState(false);
-  const [mobileOpen,   setMobileOpen]   = useState(false);
-  const [profileOpen,  setProfileOpen]  = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [role, setRole] = useState(null);
 
-  const navigate   = useNavigate();
-  const menuRef    = useRef(null);
+  const navigate = useNavigate();
+  const menuRef = useRef(null);
   const profileRef = useRef(null);
 
   const { user, LogOut } = UseAuth();
+
+  // ── Fetch user role ──────────────────────────────────────────────────────
+  useEffect(() => {
+    if (user?.email) {
+      axiosInstance
+        .get(`/api/users?email=${user.email}`)
+        .then((res) => {
+          setRole(res.data.data.role);
+        })
+        .catch((error) => {
+          console.error("Error fetching user:", error);
+          setRole(null);
+        });
+    } else {
+      setRole(null);
+    }
+  }, [user?.email]);
+
+  // ── Dynamic role-based navigation links ──────────────────────────────────
+  const getNavLinks = () => {
+    const links = [{ label: "Home", to: "/" }];
+
+    if (role === "user" || role === "USER") {
+      links.push({ label: "My Tickets", to: "/dashboard" });
+    }
+
+    if (role === "agent" || role === "ADMIN") {
+      links.push({ label: "Agent Panel", to: "/agent" });
+    }
+
+    if (role === "SUPER_ADMIN") {
+      links.push({ label: "Admin Panel", to: "/admin" });
+    }
+
+    return links;
+  };
+
+  const navLinks = getNavLinks();
 
   // ── scroll detection ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -103,19 +135,23 @@ const Navbar = () => {
         ref={menuRef}
         initial={false}
         animate={{
-          paddingTop:    scrolled ? "8px"  : "14px",
-          paddingBottom: scrolled ? "8px"  : "14px",
+          paddingTop: scrolled ? "8px" : "14px",
+          paddingBottom: scrolled ? "8px" : "14px",
         }}
         transition={{ duration: 0.3, ease: "easeOut" }}
         style={{
-          position:            "fixed",
-          top: 0, left: 0, right: 0,
-          zIndex:              50,
-          background:          scrolled ? "rgba(10,8,20,0.55)" : "rgba(10,8,20,0.25)",
-          backdropFilter:      "blur(24px) saturate(1.6)",
-          WebkitBackdropFilter:"blur(24px) saturate(1.6)",
-          borderBottom:        "1px solid rgba(255,255,255,0.08)",
-          boxShadow:           scrolled
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 50,
+          background: scrolled
+            ? "rgba(10,8,20,0.55)"
+            : "rgba(10,8,20,0.25)",
+          backdropFilter: "blur(24px) saturate(1.6)",
+          WebkitBackdropFilter: "blur(24px) saturate(1.6)",
+          borderBottom: "1px solid rgba(255,255,255,0.08)",
+          boxShadow: scrolled
             ? "inset 0 1px 0 rgba(255,255,255,0.07), 0 8px 32px rgba(0,0,0,0.4)"
             : "inset 0 1px 0 rgba(255,255,255,0.04)",
           transition: "background 0.3s ease, box-shadow 0.3s ease",
@@ -123,7 +159,6 @@ const Navbar = () => {
         className="px-5 md:px-8 lg:px-12"
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-
           {/* ── Logo ────────────────────────────────────────────────────── */}
           <NavLink
             to="/"
@@ -135,7 +170,7 @@ const Navbar = () => {
 
           {/* ── Desktop links ──────────────────────────────────────────── */}
           <div className="hidden lg:flex items-center gap-1">
-            {NAV_LINKS.map((link) => (
+            {navLinks.map((link) => (
               <div key={link.to} className="relative">
                 <NavLink to={link.to} className={linkClass}>
                   {({ isActive }) => (
@@ -146,9 +181,13 @@ const Navbar = () => {
                           className="absolute inset-0 rounded-full"
                           style={{
                             background: "rgba(255,255,255,0.12)",
-                            border:     "1px solid rgba(255,255,255,0.15)",
+                            border: "1px solid rgba(255,255,255,0.15)",
                           }}
-                          transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 380,
+                            damping: 30,
+                          }}
                         />
                       )}
                       <span className="relative z-10">{link.label}</span>
@@ -184,7 +223,10 @@ const Navbar = () => {
                   ) : (
                     <span
                       className="w-full h-full flex items-center justify-center text-xs font-bold text-white"
-                      style={{ background: "linear-gradient(135deg,#6366f1 0%,#a855f7 100%)" }}
+                      style={{
+                        background:
+                          "linear-gradient(135deg,#6366f1 0%,#a855f7 100%)",
+                      }}
                     >
                       {user.displayName?.[0] ?? "U"}
                     </span>
@@ -197,11 +239,11 @@ const Navbar = () => {
                     <motion.div
                       initial={{ opacity: 0, y: 8, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{   opacity: 0, y: 8, scale: 0.95 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.95 }}
                       transition={{ duration: 0.15, ease: "easeOut" }}
                       className="absolute right-0 top-11 w-60 rounded-2xl border border-white/10 overflow-hidden"
                       style={{
-                        background:     "rgba(13,11,26,0.96)",
+                        background: "rgba(13,11,26,0.96)",
                         backdropFilter: "blur(24px)",
                         boxShadow:
                           "0 16px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)",
@@ -219,7 +261,10 @@ const Navbar = () => {
                         ) : (
                           <span
                             className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-sm font-bold text-white ring-1 ring-white/15"
-                            style={{ background: "linear-gradient(135deg,#6366f1 0%,#a855f7 100%)" }}
+                            style={{
+                              background:
+                                "linear-gradient(135deg,#6366f1 0%,#a855f7 100%)",
+                            }}
                           >
                             {user.displayName?.[0] ?? "U"}
                           </span>
@@ -231,6 +276,11 @@ const Navbar = () => {
                           <p className="text-white/40 text-[11px] truncate mt-0.5">
                             {user.email}
                           </p>
+                          {role && (
+                            <span className="inline-block mt-1 text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">
+                              {role}
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -254,7 +304,10 @@ const Navbar = () => {
               <Link
                 to="/login"
                 className="flex bg-gradient-to-r from-orange-400 to-pink-600 items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-full transition-opacity duration-150 hover:opacity-85 active:scale-95"
-                style={{ color: "#fff", boxShadow: "0 0 16px rgba(147,51,234,0.3)" }}
+                style={{
+                  color: "#fff",
+                  boxShadow: "0 0 16px rgba(147,51,234,0.3)",
+                }}
               >
                 <LuLogIn />
                 Login
@@ -266,8 +319,10 @@ const Navbar = () => {
           <button
             className="lg:hidden flex items-center justify-center w-9 h-9 rounded-full transition-colors"
             style={{
-              background: mobileOpen ? "rgba(255,255,255,0.12)" : "transparent",
-              border:     "1px solid rgba(255,255,255,0.12)",
+              background: mobileOpen
+                ? "rgba(255,255,255,0.12)"
+                : "transparent",
+              border: "1px solid rgba(255,255,255,0.12)",
             }}
             onClick={() => setMobileOpen((v) => !v)}
             aria-label="Toggle menu"
@@ -282,15 +337,18 @@ const Navbar = () => {
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
-              exit={{   opacity: 0, height: 0 }}
+              exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.22, ease: "easeOut" }}
               className="overflow-hidden lg:hidden"
             >
               <div
                 className="max-w-7xl mx-auto mt-3 pb-4 flex flex-col gap-1"
-                style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "12px" }}
+                style={{
+                  borderTop: "1px solid rgba(255,255,255,0.08)",
+                  paddingTop: "12px",
+                }}
               >
-                {NAV_LINKS.map((link, i) => (
+                {navLinks.map((link, i) => (
                   <motion.div
                     key={link.to}
                     initial={{ opacity: 0, x: -8 }}
@@ -318,7 +376,10 @@ const Navbar = () => {
                 <motion.div
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: NAV_LINKS.length * 0.05, duration: 0.18 }}
+                  transition={{
+                    delay: navLinks.length * 0.05,
+                    duration: 0.18,
+                  }}
                   className="mt-2"
                 >
                   {user ? (
@@ -335,7 +396,10 @@ const Navbar = () => {
                         ) : (
                           <span
                             className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-xs font-bold text-white ring-1 ring-white/15"
-                            style={{ background: "linear-gradient(135deg,#6366f1 0%,#a855f7 100%)" }}
+                            style={{
+                              background:
+                                "linear-gradient(135deg,#6366f1 0%,#a855f7 100%)",
+                            }}
                           >
                             {user.displayName?.[0] ?? "U"}
                           </span>
