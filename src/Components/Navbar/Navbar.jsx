@@ -69,7 +69,7 @@ const Navbar = () => {
     const links = [{ label: "Home", to: "/" }];
 
     if (role === "user" || role === "USER") {
-      links.push({ label: "My Tickets", to: "/dashboard" });
+      links.push({ label: "My Tickets", to: "/dashboard/user-dashboard-history" });
     }
 
     if (role === "agent" || role === "ADMIN") {

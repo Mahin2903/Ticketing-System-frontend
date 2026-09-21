@@ -122,6 +122,7 @@ const INIT = {
   mobile: "",
   room: "",
   pabx: "",
+  building: "",
   attachment: null,
 };
 
@@ -287,6 +288,7 @@ const UserDashboard = () => {
       mobile: form.mobile,
       room: form.room || undefined,
       pabx: form.pabx || undefined,
+      building_name: form.building || undefined,
     };
 
     setIsSubmitting(true);
@@ -467,7 +469,7 @@ const UserDashboard = () => {
         <div className="space-y-4">
           {/* Subject */}
           <div>
-            <FieldLabel>Subject *</FieldLabel>
+            <FieldLabel>Subject </FieldLabel>
             <input
               className={inputCls}
               name="subject"
@@ -480,7 +482,7 @@ const UserDashboard = () => {
 
           {/* Priority */}
           <div>
-            <FieldLabel>Priority *</FieldLabel>
+            <FieldLabel>Priority </FieldLabel>
             <div className="flex flex-wrap gap-2">
               {PRIORITIES.map(({ value, color, bg }) => {
                 const active = form.priority === value;
@@ -517,7 +519,7 @@ const UserDashboard = () => {
           {/* Department + Help Topic */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <FieldLabel>Department *</FieldLabel>
+              <FieldLabel>Department </FieldLabel>
               <select
                 className={inputCls}
                 name="department"
@@ -537,7 +539,7 @@ const UserDashboard = () => {
               </select>
             </div>
             <div>
-              <FieldLabel>Help Topic *</FieldLabel>
+              <FieldLabel>Help Topic </FieldLabel>
               <select
                 className={inputCls}
                 name="helpTopic"
@@ -561,7 +563,7 @@ const UserDashboard = () => {
           {/* Mobile + Room + PABX */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <FieldLabel>Mobile *</FieldLabel>
+              <FieldLabel>Mobile </FieldLabel>
               <input
                 className={inputCls}
                 name="mobile"
@@ -579,7 +581,8 @@ const UserDashboard = () => {
                 name="room"
                 value={form.room}
                 onChange={handleChange}
-                placeholder="e.g. CSE-301"
+                placeholder="Enter Room number"
+                required
               />
             </div>
             <div>
@@ -589,7 +592,19 @@ const UserDashboard = () => {
                 name="pabx"
                 value={form.pabx}
                 onChange={handleChange}
-                placeholder="e.g. 2240"
+                placeholder="Enter PABX"
+                type="number"
+                min="0"
+              />
+            </div>
+            <div>
+              <FieldLabel>Building</FieldLabel>
+              <input
+                className={inputCls}
+                name="building"
+                value={form.building}
+                onChange={handleChange}
+                placeholder="e.g., Library Building"
                 type="number"
                 min="0"
               />
@@ -605,7 +620,7 @@ const UserDashboard = () => {
         subtitle="Formatting toolbar · attachment optional up to 2 MB"
       >
         <div>
-          <FieldLabel>Details *</FieldLabel>
+          <FieldLabel>Details </FieldLabel>
 
           <div className="rounded-xl border border-white/[0.09] bg-white/[0.05] focus-within:border-violet-500/50 focus-within:ring-1 focus-within:ring-violet-500/25 transition-colors overflow-hidden">
             {/* Rich-text area */}

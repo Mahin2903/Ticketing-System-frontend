@@ -1,4 +1,5 @@
-import { StrictMode } from "react";
+/* eslint-disable react-hooks/set-state-in-effect */
+import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 
@@ -20,8 +21,41 @@ import AgentDashboardManagement from "./Pages/Agent/AgentDashboardManagement.jsx
 import TicketDetails from "./Pages/Agent/TicketDetails.jsx";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import AdminDashboardOverView from "./Pages/Admin/AdminDashboardOverView.jsx";
+import { UnreadProvider } from "./Context/UnreadContext.jsx";
+import UseAuth from "./Hooks/UseAuth.jsx";
+import { axiosInstance } from "./Hooks/UseAxiosSecure.jsx";
 
 const queryClient = new QueryClient();
+
+// ── Wrapper component to inject DB User ID into UnreadProvider ────────────────
+export const AuthenticatedUnreadProvider = ({ children }) => {
+  const { user } = UseAuth();
+  const [dbUserId, setDbUserId] = useState(null);
+
+  useEffect(() => {
+    if (!user?.email) {
+      setDbUserId(null);
+      return;
+    }
+
+    axiosInstance
+      .get(`/api/users?email=${encodeURIComponent(user.email)}`)
+      .then((res) => {
+        if (res.data?.success) {
+          setDbUserId(res.data.data.id);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load user ID for UnreadProvider:", err);
+      });
+  }, [user?.email]);
+
+  return (
+    <UnreadProvider currentUserId={dbUserId}>
+      {children}
+    </UnreadProvider>
+  );
+};
 
 const router = createBrowserRouter([
   {
@@ -79,8 +113,10 @@ createRoot(document.getElementById("root")).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <RouterProvider router={router} />
+        <AuthenticatedUnreadProvider>
+          <RouterProvider router={router} />
+        </AuthenticatedUnreadProvider>
       </AuthProvider>
     </QueryClientProvider>
-  </StrictMode>,
+  </StrictMode>
 );

@@ -9,16 +9,22 @@ import { getSocket } from "../Utilities/socket";
  * @param {string|number} ticketId - Current ticket ID
  * @param {Object} currentUser - Logged in user profile { id, role, email, name }
  * @param {Function} [onNewReply] - Optional callback when a new reply arrives
+ * @param {Function} [onNewFeedback] - Optional callback when feedback arrives
  */
-const UseTicketSocket = (ticketId, currentUser = null, onNewReply = null) => {
+const UseTicketSocket = (ticketId, currentUser = null, onNewReply = null, onNewFeedback = null) => {
   const [isConnected, setIsConnected] = useState(false);
   const queryClient = useQueryClient();
   const callbackRef = useRef(onNewReply);
+  const feedbackCallbackRef = useRef(onNewFeedback);
 
-  // Keep callback reference fresh
+  // Keep callback references fresh
   useEffect(() => {
     callbackRef.current = onNewReply;
   }, [onNewReply]);
+
+  useEffect(() => {
+    feedbackCallbackRef.current = onNewFeedback;
+  }, [onNewFeedback]);
 
   useEffect(() => {
     if (!ticketId) return;
@@ -88,8 +94,31 @@ const UseTicketSocket = (ticketId, currentUser = null, onNewReply = null) => {
       }
     };
 
+    // Incoming feedback handler
+    const handleIncomingFeedback = (payload) => {
+      const feedback = payload?.feedback || payload;
+      if (!feedback) return;
+
+      // Update feedback cache for this ticket
+      queryClient.setQueryData(["ticket-feedback", ticketId], () => [feedback]);
+      queryClient.setQueryData(["ticket-feedback", String(ticketId)], () => [feedback]);
+
+      // Invalidate relevant ticket queries
+      queryClient.invalidateQueries({ queryKey: ["ticket", ticketId] });
+      queryClient.invalidateQueries({ queryKey: ["ticket", String(ticketId)] });
+      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      queryClient.invalidateQueries({ queryKey: ["agent-tickets"] });
+
+      if (feedbackCallbackRef.current) {
+        feedbackCallbackRef.current(feedback);
+      }
+    };
+
     socket.on("ticket:reply", handleIncomingReply);
     socket.on("new_ticket_reply", handleIncomingReply);
+    socket.on("ticket:feedback", handleIncomingFeedback);
+    socket.on("new_ticket_feedback", handleIncomingFeedback);
+    socket.on("ticket_feedback", handleIncomingFeedback);
 
     return () => {
       socket.emit("leave_ticket", ticketId);
@@ -97,6 +126,9 @@ const UseTicketSocket = (ticketId, currentUser = null, onNewReply = null) => {
       socket.off("disconnect", handleDisconnect);
       socket.off("ticket:reply", handleIncomingReply);
       socket.off("new_ticket_reply", handleIncomingReply);
+      socket.off("ticket:feedback", handleIncomingFeedback);
+      socket.off("new_ticket_feedback", handleIncomingFeedback);
+      socket.off("ticket_feedback", handleIncomingFeedback);
     };
   }, [ticketId, currentUser?.id, currentUser?.role, queryClient]);
 

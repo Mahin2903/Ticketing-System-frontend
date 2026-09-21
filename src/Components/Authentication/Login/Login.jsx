@@ -102,8 +102,8 @@ const Login = () => {
         >
           <motion.div variants={fadeUp} className="mb-5">
             <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-violet-500/25 bg-violet-500/10 text-violet-300/80 text-[11px] font-medium tracking-[0.18em] uppercase">
-              <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
-              Official University Portal
+              
+              ICT Cell Portal
             </span>
           </motion.div>
 
@@ -126,14 +126,7 @@ const Login = () => {
             transparent, and always on.
           </motion.p>
 
-          <motion.div variants={fadeUp} className="flex items-center gap-9">
-            {[{ val: "24/7", label: "Support" }].map(({ val, label }) => (
-              <div key={label}>
-                <p className="text-[1.35rem] font-bold text-white leading-none">{val}</p>
-                <p className="text-white/30 text-[11px] mt-1 tracking-wide">{label}</p>
-              </div>
-            ))}
-          </motion.div>
+          
         </motion.div>
       </motion.div>
 
@@ -170,7 +163,7 @@ const Login = () => {
             <p className="text-white/40 text-sm">
               Sign in to the{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-purple-400 font-medium">
-                JUST Ticketing Portal
+                JUST ICT Cell Portal
               </span>
             </p>
           </motion.div>

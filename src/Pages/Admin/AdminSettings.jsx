@@ -488,7 +488,7 @@ const HelpTopicsPanel = ({ toast }) => {
     <>
       <PanelCard
         accentColor="bg-emerald-400"
-        title="Help Topics"
+        title="Add Category"
         count={topics.length}
       >
         {/* Add form */}
@@ -503,7 +503,7 @@ const HelpTopicsPanel = ({ toast }) => {
             />
             <input
               className={inputCls}
-              placeholder="Topic title..."
+              placeholder="Category"
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
             />
