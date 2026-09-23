@@ -801,9 +801,7 @@ const TicketDetails = () => {
           </AnimatePresence>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <span className="text-[11px] text-white/30 hidden sm:inline">
-              Press <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] text-white/50 text-[10px]">⌘</kbd> / <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] text-white/50 text-[10px]">Ctrl</kbd> + <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] text-white/50 text-[10px]">Enter</kbd> to send
-            </span>
+            
             <button type="submit"
               disabled={!newNote.trim() || createReplyMutation.isPending || !currentUser?.id}
               className="px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 active:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[12.5px] font-semibold transition-all flex items-center gap-2 shadow-lg shadow-violet-600/20">

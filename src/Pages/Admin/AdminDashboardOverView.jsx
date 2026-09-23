@@ -11,12 +11,12 @@ const fetchTickets = async () => {
 
 const fetchDepartments = async () => {
   const res = await axiosInstance.get("/api/departments");
-  return res.data;
+  return res.data?.data ?? res.data ?? [];
 };
 
 const fetchUsers = async () => {
   const res = await axiosInstance.get("/api/users");
-  return res.data;
+  return res.data?.data ?? res.data ?? [];
 };
 
 // ── Minimal Visual Elements ───────────────────────────────────────────

@@ -25,15 +25,21 @@ import { UnreadProvider } from "./Context/UnreadContext.jsx";
 import UseAuth from "./Hooks/UseAuth.jsx";
 import { axiosInstance } from "./Hooks/UseAxiosSecure.jsx";
 import { isValidJustEmail } from "./Utilities/auth.utils.js";
+import PrivateRoute from "./Components/Authentication/PrivateRoute.jsx";
 
 const queryClient = new QueryClient();
 
 // ── Wrapper component to inject DB User ID into UnreadProvider ────────────────
 export const AuthenticatedUnreadProvider = ({ children }) => {
-  const { user } = UseAuth();
+  const { user, dbUser } = UseAuth();
   const [dbUserId, setDbUserId] = useState(null);
 
   useEffect(() => {
+    if (dbUser?.id) {
+      setDbUserId(dbUser.id);
+      return;
+    }
+
     if (!user?.email || !isValidJustEmail(user.email)) {
       setDbUserId(null);
       return;
@@ -49,10 +55,10 @@ export const AuthenticatedUnreadProvider = ({ children }) => {
       .catch((err) => {
         console.error("Failed to load user ID for UnreadProvider:", err);
       });
-  }, [user?.email]);
+  }, [user?.email, dbUser?.id]);
 
   return (
-    <UnreadProvider currentUserId={dbUserId}>
+    <UnreadProvider currentUserId={dbUser?.id || dbUserId}>
       {children}
     </UnreadProvider>
   );
@@ -74,7 +80,11 @@ const router = createBrowserRouter([
   },
   {
     path: "/dashboard",
-    Component: Dashboard,
+    element: (
+      <PrivateRoute allowedRoles={["user"]}>
+        <Dashboard />
+      </PrivateRoute>
+    ),
     children: [
       { index: true, Component: UserDashboard },
       {
@@ -89,7 +99,11 @@ const router = createBrowserRouter([
   },
   {
     path: "/admin",
-    Component: Admin,
+    element: (
+      <PrivateRoute allowedRoles={["admin", "super_admin"]}>
+        <Admin />
+      </PrivateRoute>
+    ),
     children: [
       { index: true, Component: AdminDashboard },
       { path: "/admin/settings", Component: AdminSettings },
@@ -100,7 +114,11 @@ const router = createBrowserRouter([
   },
   {
     path: "/agent",
-    Component: Agent,
+    element: (
+      <PrivateRoute allowedRoles={["agent", "admin", "super_admin"]}>
+        <Agent />
+      </PrivateRoute>
+    ),
     children: [
       { index: true, Component: AgentDashboard },
       { path: "/agent/management", Component: AgentDashboardManagement },

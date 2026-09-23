@@ -46,10 +46,14 @@ const Navbar = () => {
   const menuRef = useRef(null);
   const profileRef = useRef(null);
 
-  const { user, LogOut } = UseAuth();
+  const { user, role: contextRole, LogOut } = UseAuth();
 
   // ── Fetch user role ──────────────────────────────────────────────────────
   useEffect(() => {
+    if (contextRole) {
+      setRole(contextRole);
+      return;
+    }
     if (user?.email && isValidJustEmail(user.email)) {
       axiosInstance
         .get(`/api/users?email=${encodeURIComponent(user.email)}`)
@@ -63,21 +67,27 @@ const Navbar = () => {
     } else {
       setRole(null);
     }
-  }, [user?.email]);
+  }, [user?.email, contextRole]);
 
   // ── Dynamic role-based navigation links ──────────────────────────────────
   const getNavLinks = () => {
     const links = [{ label: "Home", to: "/" }];
+    const currentRole = (contextRole || role || "")
+      .toLowerCase()
+      .replace(/[\s-]+/g, "_");
 
-    if (role === "user" || role === "USER") {
-      links.push({ label: "My Tickets", to: "/dashboard/user-dashboard-history" });
+    if (currentRole === "user") {
+      links.push({
+        label: "My Tickets",
+        to: "/dashboard/user-dashboard-history",
+      });
     }
 
-    if (role === "agent" || role === "ADMIN") {
+    if (currentRole === "agent" || currentRole === "AGENT") {
       links.push({ label: "Agent Panel", to: "/agent" });
     }
 
-    if (role === "SUPER_ADMIN") {
+    if (currentRole === "admin" || currentRole === "super_admin") {
       links.push({ label: "Admin Panel", to: "/admin" });
     }
 
@@ -146,9 +156,7 @@ const Navbar = () => {
           left: 0,
           right: 0,
           zIndex: 50,
-          background: scrolled
-            ? "rgba(10,8,20,0.55)"
-            : "rgba(10,8,20,0.25)",
+          background: scrolled ? "rgba(10,8,20,0.55)" : "rgba(10,8,20,0.25)",
           backdropFilter: "blur(24px) saturate(1.6)",
           WebkitBackdropFilter: "blur(24px) saturate(1.6)",
           borderBottom: "1px solid rgba(255,255,255,0.08)",
@@ -320,9 +328,7 @@ const Navbar = () => {
           <button
             className="lg:hidden flex items-center justify-center w-9 h-9 rounded-full transition-colors"
             style={{
-              background: mobileOpen
-                ? "rgba(255,255,255,0.12)"
-                : "transparent",
+              background: mobileOpen ? "rgba(255,255,255,0.12)" : "transparent",
               border: "1px solid rgba(255,255,255,0.12)",
             }}
             onClick={() => setMobileOpen((v) => !v)}

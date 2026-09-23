@@ -11,14 +11,14 @@ import UseAxiosSecure from "../../Hooks/UseAxiosSecure";
 
 // ── API factories (receive axios instance from the calling component/hook) ────
 const makeDepartmentsApi = (axios) => ({
-  getAll: () => axios.get("/api/departments").then((r) => r.data),
+  getAll: () => axios.get("/api/departments").then((r) => r.data?.data ?? r.data ?? []),
   create: (body) => axios.post("/api/departments", body).then((r) => r.data),
   update: (id, body) => axios.patch(`/api/departments/${id}`, body).then((r) => r.data),
   remove: (id) => axios.delete(`/api/departments/${id}`).then((r) => r.data),
 });
 
 const makeHelpTopicsApi = (axios) => ({
-  getAll: () => axios.get("/api/help-topics").then((r) => r.data),
+  getAll: () => axios.get("/api/help-topics").then((r) => r.data?.data ?? r.data ?? []),
   create: (body) => axios.post("/api/help-topics", body).then((r) => r.data),
   update: (id, body) => axios.patch(`/api/help-topics/${id}`, body).then((r) => r.data),
   remove: (id) => axios.delete(`/api/help-topics/${id}`).then((r) => r.data),
@@ -228,7 +228,10 @@ const DepartmentsPanel = ({ toast }) => {
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["departments"],
-    queryFn: () => departmentsApi.getAll().then((res) => res.data ?? []),
+    queryFn: async () => {
+      const res = await departmentsApi.getAll();
+      return Array.isArray(res) ? res : res?.data ?? [];
+    },
   });
 
   const createMut = useMutation({
@@ -282,7 +285,11 @@ const DepartmentsPanel = ({ toast }) => {
     });
   };
 
-  const departments = data ?? [];
+  const departments = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.data)
+    ? data.data
+    : [];
 
   return (
     <>
@@ -428,7 +435,10 @@ const HelpTopicsPanel = ({ toast }) => {
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["help-topics"],
-    queryFn: () => helpTopicsApi.getAll().then((res) => res.data ?? []),
+    queryFn: async () => {
+      const res = await helpTopicsApi.getAll();
+      return Array.isArray(res) ? res : res?.data ?? [];
+    },
   });
 
   const createMut = useMutation({
@@ -482,7 +492,11 @@ const HelpTopicsPanel = ({ toast }) => {
     });
   };
 
-  const topics = data ?? [];
+  const topics = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.data)
+    ? data.data
+    : [];
 
   return (
     <>

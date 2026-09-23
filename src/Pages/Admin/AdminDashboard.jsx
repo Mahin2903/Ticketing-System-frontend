@@ -376,7 +376,7 @@ const SidePanel = ({ tickets = [], users = [] }) => {
 // ── Assign User Modal ─────────────────────────────────────────────────────────
 const AssignModal = ({ users = [], isLoading, ticket, onSelect, onClose }) => {
   const [search, setSearch] = useState("");
-  const [pendingUserId, setPendingUserId] = useState(undefined); // undefined = nothing staged
+  const [pendingUserId, setPendingUserId] = useState(undefined);
   const [note, setNote] = useState("");
   const NOTE_LIMIT = 300;
 
@@ -397,21 +397,18 @@ const AssignModal = ({ users = [], isLoading, ticket, onSelect, onClose }) => {
   const pendingUser = pendingUserId
     ? users.find((u) => u.id === pendingUserId)
     : null;
-  const isNoteStep = pendingUserId !== undefined; // note panel visible once an agent is staged
+  const isNoteStep = pendingUserId !== undefined;
 
-  // Stage a user for assignment — slide open the note panel
   const stageUser = (userId) => {
-    // clicking the already-staged user toggles back to the list
     if (userId === pendingUserId) {
       setPendingUserId(undefined);
       setNote("");
       return;
     }
-    setPendingUserId(userId ?? null); // null = unassign staged
+    setPendingUserId(userId ?? null);
     setNote("");
   };
 
-  // Final confirmation + submit
   const handleConfirm = async () => {
     const isUnassigning = pendingUserId === null && ticket.assigned_to;
     const isReassigning =
@@ -675,7 +672,7 @@ const AssignModal = ({ users = [], isLoading, ticket, onSelect, onClose }) => {
           )}
         </div>
 
-        {/* ── Note panel — slides in once an agent is staged ── */}
+        {/* ── Note panel ── */}
         <AnimatePresence initial={false}>
           {isNoteStep && (
             <motion.div
@@ -687,7 +684,6 @@ const AssignModal = ({ users = [], isLoading, ticket, onSelect, onClose }) => {
               className="overflow-hidden"
             >
               <div className="px-4 pt-3 pb-4 border-t border-white/[0.07] bg-black/20">
-                {/* Section label */}
                 <div className="flex items-center gap-2 mb-2.5">
                   <svg
                     width="12"
@@ -711,7 +707,6 @@ const AssignModal = ({ users = [], isLoading, ticket, onSelect, onClose }) => {
                   </span>
                 </div>
 
-                {/* Assignee preview */}
                 {pendingUser && (
                   <div className="flex items-center gap-2 mb-2.5 px-2.5 py-1.5 rounded-lg bg-violet-500/[0.08] border border-violet-500/15">
                     <span
@@ -744,7 +739,6 @@ const AssignModal = ({ users = [], isLoading, ticket, onSelect, onClose }) => {
                   </div>
                 )}
 
-                {/* Textarea */}
                 {pendingUserId !== null && (
                   <div className="relative">
                     <textarea
@@ -764,7 +758,6 @@ const AssignModal = ({ users = [], isLoading, ticket, onSelect, onClose }) => {
                   </div>
                 )}
 
-                {/* Action row */}
                 <div className="flex items-center justify-between mt-3">
                   <button
                     onClick={() => {
@@ -822,6 +815,7 @@ const AdminDashboard = () => {
       return res.data.data ?? [];
     },
   });
+
   const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
@@ -829,16 +823,22 @@ const AdminDashboard = () => {
       return res.data.data ?? [];
     },
   });
-  const tickets = useMemo(() => ticketsData ?? [], [ticketsData]);
-  const users = useMemo(() => usersData ?? [], [usersData]);
 
-  // Batch-fetch feedback for completed tickets
+  // ── FIX: Array.isArray guards prevent "tickets.filter is not a function"
+  //    when ticketsData / usersData is undefined on the first render cycle.
+  const tickets = useMemo(
+    () => (Array.isArray(ticketsData) ? ticketsData : []),
+    [ticketsData],
+  );
+  const users = useMemo(
+    () => (Array.isArray(usersData) ? usersData : []),
+    [usersData],
+  );
+
+  // Derived from `tickets` (the safe array above) — never from raw ticketsData
   const completedAdminTicketIds = useMemo(
-    () =>
-      tickets
-        .filter((t) => t.status === "COMPLETE")
-        .map((t) => t.id),
-    [tickets]
+    () => tickets.filter((t) => t.status === "COMPLETE").map((t) => t.id),
+    [tickets],
   );
 
   const { data: feedbackMap = {} } = useQuery({
@@ -849,9 +849,11 @@ const AdminDashboard = () => {
         completedAdminTicketIds.map((id) =>
           axios.get(`/api/ticket-feedback/ticket/${id}`).then((r) => ({
             id,
-            feedback: Array.isArray(r.data?.data) ? r.data.data[0] : r.data?.data || null,
-          }))
-        )
+            feedback: Array.isArray(r.data?.data)
+              ? r.data.data[0]
+              : r.data?.data || null,
+          })),
+        ),
       );
       const map = {};
       for (const res of results) {
@@ -902,7 +904,7 @@ const AdminDashboard = () => {
     onSuccess: invalidate,
   });
 
-  // ── Handlers with SweetAlert ──────────────────────────────────────────────
+  // ── Handlers ─────────────────────────────────────────────────────────────
 
   const handleStatusChange = async (ticket, newStatus) => {
     const fromLabel = FILTER_LABELS[ticket.status] ?? ticket.status;
@@ -1182,21 +1184,25 @@ const AdminDashboard = () => {
                             Dept #{ticket.department_id}
                             {ticket.room ? ` · ${ticket.room}` : ""}
                           </span>
-                          {ticket.status === "COMPLETE" && feedbackMap[ticket.id] && (() => {
-                            const parsed = parseFeedbackComment(feedbackMap[ticket.id].comment);
-                            const isSatisfied = parsed.type === "Satisfied";
-                            return (
-                              <span
-                                className={`inline-flex items-center gap-1 text-[9.5px] font-bold px-1.5 py-0.5 rounded border ${
-                                  isSatisfied
-                                    ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
-                                    : "bg-sky-500/15 text-sky-300 border-sky-500/30"
-                                }`}
-                              >
-                                {isSatisfied ? "⭐ Satisfied" : "✅ Done"}
-                              </span>
-                            );
-                          })()}
+                          {ticket.status === "COMPLETE" &&
+                            feedbackMap[ticket.id] &&
+                            (() => {
+                              const parsed = parseFeedbackComment(
+                                feedbackMap[ticket.id].comment,
+                              );
+                              const isSatisfied = parsed.type === "Satisfied";
+                              return (
+                                <span
+                                  className={`inline-flex items-center gap-1 text-[9.5px] font-bold px-1.5 py-0.5 rounded border ${
+                                    isSatisfied
+                                      ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                                      : "bg-sky-500/15 text-sky-300 border-sky-500/30"
+                                  }`}
+                                >
+                                  {isSatisfied ? "⭐ Satisfied" : "✅ Done"}
+                                </span>
+                              );
+                            })()}
                         </div>
                         <p className="text-[13px] font-medium text-white/85 truncate">
                           {ticket.subject}
@@ -1217,7 +1223,7 @@ const AdminDashboard = () => {
                         </span>
                       </div>
 
-                      {/* Status Select — now with SweetAlert confirm */}
+                      {/* Status Select */}
                       <select
                         value={ticket.status}
                         onChange={(e) =>
@@ -1345,7 +1351,6 @@ const AdminDashboard = () => {
                               </p>
                             </div>
 
-                            {/* Assignment note — shown only when one exists */}
                             {ticket.assignment_note && (
                               <div>
                                 <div className="flex items-center gap-1.5 mb-1.5">
@@ -1373,52 +1378,74 @@ const AdminDashboard = () => {
                               </div>
                             )}
 
-                            {/* Customer Feedback if completed */}
                             {ticket.status === "COMPLETE" && (
                               <div className="space-y-1.5">
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-1.5">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2.5">
+                                    <svg
+                                      width="12"
+                                      height="12"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="#34d399"
+                                      strokeWidth="2.5"
+                                    >
                                       <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
                                     </svg>
                                     <span className="text-[10.5px] font-semibold text-emerald-400 uppercase tracking-wider">
                                       Customer Feedback
                                     </span>
                                   </div>
-                                  {feedbackMap[ticket.id] && (() => {
-                                    const parsed = parseFeedbackComment(feedbackMap[ticket.id].comment);
-                                    const isSat = parsed.type === "Satisfied";
-                                    return (
-                                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
-                                        isSat ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" : "bg-sky-500/15 text-sky-300 border-sky-500/30"
-                                      }`}>
-                                        {isSat ? "⭐ Satisfied" : "✅ Done"}
-                                      </span>
-                                    );
-                                  })()}
+                                  {feedbackMap[ticket.id] &&
+                                    (() => {
+                                      const parsed = parseFeedbackComment(
+                                        feedbackMap[ticket.id].comment,
+                                      );
+                                      const isSat = parsed.type === "Satisfied";
+                                      return (
+                                        <span
+                                          className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                                            isSat
+                                              ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                                              : "bg-sky-500/15 text-sky-300 border-sky-500/30"
+                                          }`}
+                                        >
+                                          {isSat ? "⭐ Satisfied" : "✅ Done"}
+                                        </span>
+                                      );
+                                    })()}
                                 </div>
 
-                                {feedbackMap[ticket.id] ? (() => {
-                                  const parsed = parseFeedbackComment(feedbackMap[ticket.id].comment);
-                                  return (
-                                    <div className="p-3 rounded-xl bg-emerald-500/[0.07] border border-emerald-500/20 text-white/80 space-y-1.5">
-                                      {parsed.tags?.length > 0 && (
-                                        <div className="flex flex-wrap gap-1">
-                                          {parsed.tags.map((t) => (
-                                            <span key={t} className="px-1.5 py-0.5 rounded text-[9.5px] bg-emerald-500/20 text-emerald-300 font-medium">
-                                              ✓ {t}
-                                            </span>
-                                          ))}
-                                        </div>
-                                      )}
-                                      <p className="text-[12px] italic leading-relaxed">
-                                        "{parsed.note || "Confirmed resolved by customer."}"
-                                      </p>
-                                    </div>
-                                  );
-                                })() : (
+                                {feedbackMap[ticket.id] ? (
+                                  (() => {
+                                    const parsed = parseFeedbackComment(
+                                      feedbackMap[ticket.id].comment,
+                                    );
+                                    return (
+                                      <div className="p-3 rounded-xl bg-emerald-500/[0.07] border border-emerald-500/20 text-white/80 space-y-1.5">
+                                        {parsed.tags?.length > 0 && (
+                                          <div className="flex flex-wrap gap-1">
+                                            {parsed.tags.map((t) => (
+                                              <span
+                                                key={t}
+                                                className="px-1.5 py-0.5 rounded text-[9.5px] bg-emerald-500/20 text-emerald-300 font-medium"
+                                              >
+                                                ✓ {t}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        )}
+                                        <p className="text-[12px] italic leading-relaxed">
+                                          "{parsed.note ||
+                                            "Confirmed resolved by customer."}"
+                                        </p>
+                                      </div>
+                                    );
+                                  })()
+                                ) : (
                                   <p className="text-[11.5px] text-white/35 italic bg-white/[0.02] p-2.5 rounded-xl border border-white/[0.05]">
-                                    Awaiting customer feedback for this completed ticket.
+                                    Awaiting customer feedback for this
+                                    completed ticket.
                                   </p>
                                 )}
                               </div>
@@ -1459,7 +1486,6 @@ const AdminDashboard = () => {
                               )}
                             </div>
 
-                            {/* Drawer Action Bar */}
                             <div className="pt-2 border-t border-white/[0.05] flex flex-wrap items-center justify-between gap-2">
                               <a
                                 href={`/admin/ticket/${ticket.id}`}
@@ -1471,7 +1497,9 @@ const AdminDashboard = () => {
                               {ticket.status === "COMPLETE" && (
                                 <button
                                   type="button"
-                                  onClick={() => handleStatusChange(ticket, "IN_PROGRESS")}
+                                  onClick={() =>
+                                    handleStatusChange(ticket, "IN_PROGRESS")
+                                  }
                                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/15 text-amber-200 hover:bg-amber-500/25 text-[11.5px] font-medium transition-colors"
                                 >
                                   Reopen Ticket
