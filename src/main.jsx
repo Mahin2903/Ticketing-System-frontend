@@ -24,6 +24,7 @@ import AdminDashboardOverView from "./Pages/Admin/AdminDashboardOverView.jsx";
 import { UnreadProvider } from "./Context/UnreadContext.jsx";
 import UseAuth from "./Hooks/UseAuth.jsx";
 import { axiosInstance } from "./Hooks/UseAxiosSecure.jsx";
+import { isValidJustEmail } from "./Utilities/auth.utils.js";
 
 const queryClient = new QueryClient();
 
@@ -33,7 +34,7 @@ export const AuthenticatedUnreadProvider = ({ children }) => {
   const [dbUserId, setDbUserId] = useState(null);
 
   useEffect(() => {
-    if (!user?.email) {
+    if (!user?.email || !isValidJustEmail(user.email)) {
       setDbUserId(null);
       return;
     }

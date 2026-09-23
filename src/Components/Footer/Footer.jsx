@@ -5,8 +5,8 @@ const NAV_LINKS = [
   { label: "Home", to: "/" },
   { label: "Submit a ticket", to: "/dashboard" },
   { label: "My tickets", to: "/dashboard/user-dashboard-history" },
-  { label: "Track status", to: "/dashboard/track" },
-  { label: "FAQ", to: "/faq" },
+  { label: "Track status", to: "/dashboard/user-dashboard-history" },
+  
 ];
 
 const DEPT_LINKS = [

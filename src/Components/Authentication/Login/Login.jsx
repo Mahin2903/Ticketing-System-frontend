@@ -9,6 +9,7 @@ import uniImg from "../../../images/IMG_0794.png";
 import UseAuth from "../../../Hooks/UseAuth";
 import UseAxiosSecure from "../../../Hooks/UseAxiosSecure";
 import Logo from "../../../Utilities/Logo";
+import { isValidJustEmail } from "../../../Utilities/auth.utils";
 
 // ── animation variants ────────────────────────────────────────────────────────
 const stagger = {
@@ -28,7 +29,7 @@ const imagePan = {
 
 // ── component ─────────────────────────────────────────────────────────────────
 const Login = () => {
-  const { LoginWithGoogle, user, loading } = UseAuth();
+  const { LoginWithGoogle, LogOut, user, loading } = UseAuth();
   const axiosSecure = UseAxiosSecure();
   const navigate = useNavigate();
   const location = useLocation();
@@ -36,18 +37,69 @@ const Login = () => {
   const from = location.state?.from?.pathname || "/";
 
   useEffect(() => {
-    if (user) navigate(from, { replace: true });
+    if (user && isValidJustEmail(user.email)) {
+      navigate(from, { replace: true });
+    }
   }, [user, navigate, from]);
+
+  const showAccessRestrictedAlert = (attemptedEmail) => {
+    Swal.fire({
+      icon: "error",
+      title: "Access Restricted",
+      html: `
+        <div style="text-align: left; font-size: 13.5px; line-height: 1.6;">
+          <p style="margin-bottom: 12px; color: #f1f5f9;">
+            Only official JUST institutional email accounts are permitted to access this portal:
+          </p>
+          <ul style="margin: 0 0 14px 18px; list-style-type: disc; color: #c4b5fd;">
+            <li><code style="color: #a78bfa;">username@just.edu.bd</code> (Faculty &amp; Staff)</li>
+            <li><code style="color: #a78bfa;">roll/id@student.just.edu.bd</code> (Students)</li>
+          </ul>
+          ${
+            attemptedEmail
+              ? `<div style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 8px 12px; margin-top: 10px; font-size: 12.5px; color: #fca5a5;">
+                  Attempted sign-in with: <strong style="color: #ffffff; word-break: break-all;">${attemptedEmail}</strong>
+                </div>`
+              : ""
+          }
+        </div>
+      `,
+      background: "#0f0b1a",
+      color: "#e2e8f0",
+      confirmButtonColor: "#7c3aed",
+      confirmButtonText: "Got it",
+      customClass: { popup: "rounded-2xl border border-white/10" },
+    });
+  };
 
   const handleGoogleLogin = async () => {
     try {
       const result = await LoginWithGoogle();
-      const { displayName: name, email } = result.user;
+      const email = result?.user?.email || "";
+      const name = result?.user?.displayName || "";
+
+      if (!isValidJustEmail(email)) {
+        await LogOut();
+        showAccessRestrictedAlert(email);
+        return;
+      }
 
       await axiosSecure.post("/api/users", { name, email });
 
       navigate(from, { replace: true });
     } catch (err) {
+      if (
+        err?.code === "auth/popup-closed-by-user" ||
+        err?.code === "auth/cancelled-popup-request"
+      ) {
+        return;
+      }
+
+      if (err?.message === "INVALID_JUST_EMAIL") {
+        showAccessRestrictedAlert(err?.email);
+        return;
+      }
+
       Swal.fire({
         icon:               "error",
         title:              "Sign-in failed",
@@ -180,9 +232,14 @@ const Login = () => {
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-500/[0.05] via-transparent to-amber-500/[0.03] pointer-events-none" />
 
             <div className="relative space-y-5">
-              <p className="text-white/40 text-[13px] text-center">
-                Use your JUST Google Workspace account
-              </p>
+              <div className="space-y-1 text-center">
+                <p className="text-white/60 text-[13px] font-medium">
+                  Use your JUST Google Workspace account
+                </p>
+                <p className="text-violet-400/80 text-[11.5px] font-mono">
+                  @just.edu.bd &bull; @student.just.edu.bd
+                </p>
+              </div>
 
               <motion.button
                 onClick={handleGoogleLogin}
@@ -231,9 +288,9 @@ const Login = () => {
 
           <motion.p
             variants={fadeUp}
-            className="text-center text-white/20 text-[11px] mt-5 tracking-wide"
+            className="text-center text-white/30 text-[11.5px] mt-5 tracking-wide"
           >
-            Restricted to JUST students, faculty &amp; staff
+            Restricted to official JUST accounts (<span className="text-violet-300 font-mono">@just.edu.bd</span> &amp; <span className="text-violet-300 font-mono">@student.just.edu.bd</span>)
           </motion.p>
         </motion.div>
       </div>

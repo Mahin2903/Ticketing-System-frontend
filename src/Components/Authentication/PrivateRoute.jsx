@@ -2,6 +2,7 @@
 
 import { Navigate, useLocation } from "react-router";
 import UseAuth from "../Hooks/UseAuth";   // adjust path if needed
+import { isValidJustEmail } from "../../Utilities/auth.utils";
 
 
 const PrivateRoute = ({ children }) => {
@@ -21,7 +22,7 @@ const PrivateRoute = ({ children }) => {
     );
   }
 
-  if (!user) {
+  if (!user || !isValidJustEmail(user.email)) {
     return (
       <Navigate to="/login" state={{ from: location }} replace />
     );

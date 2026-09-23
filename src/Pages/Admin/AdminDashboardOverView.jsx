@@ -1,24 +1,22 @@
 /* eslint-disable no-unused-vars */
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
+import { axiosInstance } from "../../Hooks/UseAxiosSecure";
 
 // ── API Fetchers ─────────────────────────────────────────────────────────────
 const fetchTickets = async () => {
-  const res = await fetch("/api/tickets");
-  if (!res.ok) throw new Error("Failed to fetch tickets");
-  return res.json();
+  const res = await axiosInstance.get("/api/tickets");
+  return res.data;
 };
 
 const fetchDepartments = async () => {
-  const res = await fetch("/api/departments");
-  if (!res.ok) throw new Error("Failed to fetch departments");
-  return res.json();
+  const res = await axiosInstance.get("/api/departments");
+  return res.data;
 };
 
 const fetchUsers = async () => {
-  const res = await fetch("/api/users");
-  if (!res.ok) throw new Error("Failed to fetch users");
-  return res.json();
+  const res = await axiosInstance.get("/api/users");
+  return res.data;
 };
 
 // ── Minimal Visual Elements ───────────────────────────────────────────

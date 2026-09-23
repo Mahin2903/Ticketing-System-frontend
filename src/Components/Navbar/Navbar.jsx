@@ -6,6 +6,7 @@ import Logo from "../../Utilities/Logo";
 import { LuLogIn, LuLogOut } from "react-icons/lu";
 import UseAuth from "../../Hooks/UseAuth";
 import { axiosInstance } from "../../Hooks/UseAxiosSecure";
+import { isValidJustEmail } from "../../Utilities/auth.utils";
 
 // ── helpers ────────────────────────────────────────────────────────────────────
 const HamburgerIcon = ({ open }) => (
@@ -49,9 +50,9 @@ const Navbar = () => {
 
   // ── Fetch user role ──────────────────────────────────────────────────────
   useEffect(() => {
-    if (user?.email) {
+    if (user?.email && isValidJustEmail(user.email)) {
       axiosInstance
-        .get(`/api/users?email=${user.email}`)
+        .get(`/api/users?email=${encodeURIComponent(user.email)}`)
         .then((res) => {
           setRole(res.data.data.role);
         })
